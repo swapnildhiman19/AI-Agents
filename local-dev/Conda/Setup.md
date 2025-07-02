@@ -1,4 +1,4 @@
-Install Miniconda
+##Install Miniconda
 https://docs.anaconda.com/miniconda/install/#quick-command-line-install
 
 
@@ -10,7 +10,7 @@ rm ~/miniconda3/miniconda.sh
 
 All version URLs can be found here https://repo.anaconda.com/miniconda/
 
-Setup Miniconda
+##Setup Miniconda
 source ~/miniconda3/bin/activate
 conda init --all   
 Create a new env

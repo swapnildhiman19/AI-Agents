@@ -1,0 +1,3 @@
+# Requirements for Conda environment setup and Python script execution, can directly be used by "pip install requirements.txt"
+python-dotenv
+

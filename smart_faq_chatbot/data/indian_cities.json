@@ -1,0 +1,211 @@
+[
+    {
+      "name": "Delhi",
+      "continent": "Asia",
+      "id": 1001,
+      "placeID": "INDELHIA1C0RE001",
+      "longitude": 77.2090,
+      "latitude": 28.6139,
+      "span": 8.0,
+      "description": "India’s capital is a layered tapestry of ancient empires and modern power. Old Delhi’s labyrinthine lanes open into Mughal masterpieces like the Red Fort and the Jama Masjid, while leafy New Delhi showcases Lutyens’ grand avenues, India Gate, and the Parliament complex. The city straddles the Yamuna River and hums with markets such as Chandni Chowk and Dilli Haat, where aromas of chaat, kebabs, and parathas mingle with the clang of cycle‑rickshaws.\n\nCenturies of rule—from the Delhi Sultanate to the Mughals and the British Raj—left a dense constellation of monuments: Humayun’s Tomb foreshadowed the Taj’s design; Qutub Minar rises from the remains of earlier settlements. Urban villages like Hauz Khas and Shahpur Jat repurpose medieval reservoirs and ruins into creative hubs. Museums, crafts enclaves, and Sufi shrines like Nizamuddin Auliya keep living traditions in view.\n\nDespite traffic and extreme summers, Delhi sustains surprising biodiversity in the Aravalli ridge parks and the Yamuna floodplains. Nilgai sometimes wander the city’s edges; winter brings migratory birds to wetlands like Okhla. Festivals—Diwali, Eid, Holi, Gurpurab—paint the city in lights, colors, and devotional music. Street food culture, classical arts at auditoriums, and a thriving café scene round out a metropolis that is equal parts archive and accelerator.",
+      "shortDescription": "India’s capital blends Old Delhi’s Mughal heritage and New Delhi’s grand boulevards with vibrant markets, street food, and living traditions."
+    },
+    {
+      "name": "Mumbai",
+      "continent": "Asia",
+      "id": 1002,
+      "placeID": "INMUMBAI7SEA002",
+      "longitude": 72.8777,
+      "latitude": 19.0760,
+      "span": 8.0,
+      "description": "Perched on a peninsula into the Arabian Sea, Mumbai is India’s financial engine and a city of islands knitted into one. Colonial‑era Gothic and Art Deco facades line Marine Drive and Oval Maidan, while fishing villages (koliwadas) and new skylines coexist. The Gateway of India guards the harbor, and ferries lead to the Elephanta Caves with rock‑cut sculptures from the 5th–6th centuries CE.\n\nThe city grew with mills and ports, later transforming into a cinema powerhouse—Bollywood—whose studios and theaters pulse with imagination. Neighborhoods each carry a signature: Bandra’s cafés and street art, Dharavi’s industrious workshops, Fort’s bookstalls and galleries. Food maps the city’s diversity: Irani cafés serve keema pav and berry pulao, while khau gullies dish out vada pav, pav bhaji, and seafood thalis.\n\nMonsoon rains redefine the seafronts, filling lakes in Sanjay Gandhi National Park where leopards share space with a dense metropolis. Ganesh Chaturthi immersions, dahi handi pyramids, and Diwali lights time the year. Local trains and the new metro weave livelihoods across this nonstop city where dreams, deals, and cinema scripts meet the sea breeze.",
+      "shortDescription": "Island city on the Arabian Sea—finance, Bollywood, colonial avenues, fishing villages, and legendary street food powered by monsoon rhythms."
+    },
+    {
+      "name": "Jaipur",
+      "continent": "Asia",
+      "id": 1003,
+      "placeID": "INJAIPURP1NK003",
+      "longitude": 75.7873,
+      "latitude": 26.9124,
+      "span": 8.0,
+      "description": "The ‘Pink City’ of Rajasthan is a planned 18th‑century capital laid on a grid, where terracotta facades glow at sunset. City Palace, the honeycombed Hawa Mahal, and the astronomical instruments of Jantar Mantar reveal a court that prized aesthetics and science. Crafts like block printing, meenakari enamel, and blue pottery animate bustling bazaars—Johari, Bapu, and Tripolia.\n\nAmber Fort crowns the Aravalli hills with mirrored halls and ramparts overlooking Maota Lake. Stepwells, havelis, and old gates punctuate streets designed for processions and trade. Rajasthani thalis pile up dal‑baati‑churma and ghee‑soaked sweets; rooftop eateries look to Nahargarh as the city lights spark on.\n\nDesert scrub and seasonal lakes attract peacocks, parakeets, and migratory visitors around Jal Mahal. Winter festivals bring kite‑filled skies for Makar Sankranti and literature congregations at Diggi Palace. Jaipur bridges royal legacies and contemporary design, becoming a gateway to crafts circuits and tiger parks of the region.",
+      "shortDescription": "Rajasthan’s Pink City—forts, palaces, scientific observatories, and vibrant bazaars framed by the Aravalli hills."
+    },
+    {
+      "name": "Varanasi",
+      "continent": "Asia",
+      "id": 1004,
+      "placeID": "INBENA1ESAR004",
+      "longitude": 83.0020,
+      "latitude": 25.3176,
+      "span": 6.0,
+      "description": "On a crescent of the Ganga, Varanasi is one of the world’s oldest living cities—a confluence of devotion, music, and scholarship. Stepped ghats descend to ritual baths and cremation pyres, while dawn boats glide past temples ringing with conch and bells. The city’s lanes coil through akharas, silk weavers’ karkhanas, and classical music gharanas.\n\nArchitecture spans centuries: Kashi Vishwanath corridor links ancient shrines; Ramnagar Fort faces the river with a museum of royal memorabilia. Saffron‑clad ascetics share space with students from Sanskrit colleges and Banaras Hindu University. Street food—kachori‑sabzi, tamatar chaat, and malaiyo in winter—marks the seasons.\n\nEvenings gather at the Ganga aarti, lamps arcing against the river breeze. Monsoons lift the water to the steps; winters bring fog that mutts the temple bells. Beyond pilgrimage, Varanasi is a cradle of Hindustani classical arts, from sitar to Dhrupad, keeping timeless cadence.",
+      "shortDescription": "Ancient city on the Ganga with ritual ghats, temples, silk workshops, and classical music traditions."
+    },
+    {
+      "name": "Kolkata",
+      "continent": "Asia",
+      "id": 1005,
+      "placeID": "INKOLKATAGANG005",
+      "longitude": 88.3639,
+      "latitude": 22.5726,
+      "span": 6.0,
+      "description": "Kolkata, on the Hooghly River, was the capital of British India and remains a cultural powerhouse. The Howrah Bridge and tramlines frame neighborhoods of colonial architecture, bookstalls, and sweet shops. College Street’s stacks, Coffee House debates, and Rabindra Sadan’s stages nurture a city of ideas.\n\nBengali cuisine—fish curries, kosha mangsho, and mishti like rosogolla and sandesh—fills iconic cabins and canteens. Durga Puja transforms the city with elaborate pandals, art installations, and drumbeats. The Victoria Memorial’s marble domes share space with modern museums and football stadiums.\n\nWetlands on the city’s edge recycle and farm, hosting migratory birds. Kumartuli sculptors shape clay deities along narrow lanes. Poetry, cinema, and addas run deep, giving the city a reflective pace amid the rattle of yellow taxis and the river breeze.",
+      "shortDescription": "Cultural capital on the Hooghly—colonial boulevards, book culture, Durga Puja artistry, and beloved Bengali cuisine."
+    },
+    {
+      "name": "Hyderabad",
+      "continent": "Asia",
+      "id": 1006,
+      "placeID": "INHYDDECCAN006",
+      "longitude": 78.4867,
+      "latitude": 17.3850,
+      "span": 8.0,
+      "description": "Straddling old Deccan grace and new‑age tech parks, Hyderabad is a city of minarets and microchips. The Charminar anchors bazaars scented with ittar and studded with pearls, while the Golconda Fort recalls Qutb Shahi might. Qutub Shahi Tombs, Chowmahalla Palace, and Mecca Masjid map a royal legacy across granite outcrops.\n\nThe city’s culinary identity is unmistakable: Hyderabadi biryani layered with saffron, haleem during Ramzan, and Irani chai with Osmania biscuits. HITEC City’s glass towers signal India’s software ascent, and film studios in neighboring lands add star power.\n\nLakes like Hussain Sagar and Durgam Cheruvu pull evening walkers. Rock formations and urban forests shelter parakeets and peafowl; monsoons refresh the Deccan’s scrub. Festivals from Bonalu to Bathukamma splash color onto a city that speaks both Dakhni Urdu and startup code.",
+      "shortDescription": "Deccan capital of Charminar and biryani meets HITEC City’s tech skyline and lakeside evenings."
+    },
+    {
+      "name": "Bengaluru",
+      "continent": "Asia",
+      "id": 1007,
+      "placeID": "INBLRGAARD007",
+      "longitude": 77.5946,
+      "latitude": 12.9716,
+      "span": 8.0,
+      "description": "At 900 meters on the Deccan plateau, Bengaluru blends garden city legacies with India’s startup corridor. Cubbon Park and Lalbagh’s glasshouse anchor a canopy of rain trees, while Cantonment churches and heritage bungalows neighbor modern biotech and fintech campuses. The city’s climate nurtures cafés, craft breweries, and music venues.\n\nOnce a cantonment and princely town, it grew into a research and aerospace hub with IISc and ISRO. Neighborhoods like Basavanagudi and Malleswaram keep old markets and eateries alive—dose, filter coffee, and Iyengar bakery lines. New quarters like Indiranagar and HSR buzz with coworking, gaming, and design studios.\n\nSeasonal lakes attract pelicans and herons; Nandi Hills and Savandurga offer quick escapes. Tech meetups, classical concerts, and street theater share the calendar in a city that codes by day and converses into the night.",
+      "shortDescription": "High‑plateau tech hub with parks, old markets, filter coffee culture, and India’s startup energy."
+    },
+    {
+      "name": "Chennai",
+      "continent": "Asia",
+      "id": 1008,
+      "placeID": "INCHENNAI619BEA08",
+      "longitude": 80.2707,
+      "latitude": 13.0827,
+      "span": 8.0,
+      "description": "On the Coromandel Coast, Chennai is a port city where classical arts thrive beside an automotive and IT corridor. Marina Beach arcs along the Bay of Bengal; Kapaleeshwarar Temple’s gopurams rise over Mylapore. Fort St. George recalls early colonial trade routes that reshaped the Indian Ocean world.\n\nCarnatic music and Bharatanatyam bloom each winter during the Margazhi season in sabhas across the city. Tamil cinema studios fuel pop culture, while filter coffee, idli‑sambar, and seafood counters anchor everyday tastes. Heritage neighborhoods—Triplicane, George Town—pack wholesale markets and shrines into electric lanes.\n\nBackwaters and city lakes host egrets and painted storks; sea breezes script summer evenings. The city’s resilience shows each monsoon as communities rally around relief and restoration, keeping faith with both tradition and enterprise.",
+      "shortDescription": "Coromandel port city—temples, Carnatic music, and automotive‑IT corridors along the Bay of Bengal."
+    },
+    {
+      "name": "Pune",
+      "continent": "Asia",
+      "id": 1009,
+      "placeID": "INPUNEDECCAN009",
+      "longitude": 73.8567,
+      "latitude": 18.5204,
+      "span": 6.0,
+      "description": "Pune sits where the Mula and Mutha rivers meet, a former Maratha capital turned education and tech hub. Shaniwar Wada’s ramparts recall the Peshwas; leafy campuses and research parks drive a youthful tempo. The city’s neighborhoods—Kasba, Deccan Gymkhana, Koregaon Park—mix wada architecture, bakeries, and cafés.\n\nThe Sahyadris rise to forts like Sinhagad and Rajgad, popular monsoon treks with carpets of wildflowers. Classical music conferences, Ganeshotsav processions, and thriving theater societies mark the cultural calendar. Misal pav, bakarwadi, and mango mastani sweeten the city’s palate.\n\nPleasant winters and accessible hills make Pune a gateway to the Konkan and to heritage circuits across Maharashtra, balancing student bustle with green escapes.",
+      "shortDescription": "Deccan city of forts, universities, and monsoon treks—Maratha history meets cafés and research labs."
+    },
+    {
+      "name": "Udaipur",
+      "continent": "Asia",
+      "id": 1010,
+      "placeID": "INUDAIPURLAKE010",
+      "longitude": 73.7125,
+      "latitude": 24.5854,
+      "span": 6.0,
+      "description": "Encircled by the Aravalli hills, Udaipur strings lakes and palaces into a shimmering necklace. City Palace steps down to Lake Pichola, where island palaces and ghats reflect in evening lamps. Havelis with jharokhas line narrow lanes that lead to markets of miniature paintings, silver, and textiles.\n\nTraditional stepwells and water channels once fed the city’s reservoirs—Fateh Sagar, Swaroop Sagar—now promenades for sunsets and cycling. Nearby, the monsoon palace peers over rolling ridges. Rajasthani thalis, kachoris, and saffron‑tinged sweets echo festive courtyards where folk music and dance still animate weddings and fairs.\n\nMigratory birds rest on the lakes in winter, and boat rides skim past facades that glow gold at dusk. Udaipur remains one of India’s most cinematic cityscapes, a serene counterpoint to desert heat.",
+      "shortDescription": "Lake city of palaces and havelis framed by the Aravallis, famed for sunsets, crafts, and boat‑glimmered evenings."
+    },
+    {
+      "name": "Amritsar",
+      "continent": "Asia",
+      "id": 1011,
+      "placeID": "INAMRITSARGOLD011",
+      "longitude": 74.8723,
+      "latitude": 31.6340,
+      "span": 6.0,
+      "description": "Amritsar centers on the Harmandir Sahib—the Golden Temple—whose sanctum shimmers in a pool of nectar, the Amrit Sarovar. Kirtan floats continuously as volunteers in the langar hall serve free meals to thousands daily, embodying Sikh principles of seva and equality. The complex merges marble inlay, gilded domes, and a causeway that stills the city’s bustle.\n\nNearby, Jallianwala Bagh memorializes India’s freedom struggle. The old city’s katras sell phulkari, juttis, and spices, while dhabas plate up kulchas, lassi, and tandoori fare. Evening flag ceremonies at the Attari‑Wagah border draw crowds to a theatrical lowering of standards.\n\nWinters are crisp; summers blaze. The city’s hospitality and sacred music create a luminous atmosphere where travelers pause, share a meal, and reflect beside the water.",
+      "shortDescription": "Home of the Golden Temple, a living Sikh shrine with continuous kirtan, community kitchens, and storied bazaars."
+    },
+    {
+      "name": "Kochi",
+      "continent": "Asia",
+      "id": 1012,
+      "placeID": "INKOCHIBACKW012",
+      "longitude": 76.2711,
+      "latitude": 9.9312,
+      "span": 6.0,
+      "description": "Kochi spreads across islands and peninsulas on Kerala’s Arabian Sea coast, where Chinese fishing nets silhouette sunsets and spice warehouses perfume the air. Fort Kochi’s colonial layers—Portuguese, Dutch, British—frame synagogues, churches, and mansions turned into cafés and galleries. Jew Town’s antiques and the Paradesi Synagogue trace centuries of maritime exchange.\n\nBackwaters thread toward Alappuzha and Kuttanad; houseboats drift through paddy fields below sea level. Kathakali and kalaripayattu schools keep classical arts alive, while modern art biennales reimagine godowns as studios. Seafood curries, appam‑stew, and toddy shops round out a coastal pantry.\n\nMonsoon greens the coconut groves; migratory birds feed in mangroves and lagoons. Kochi remains a gentle port of convergences—of trade winds, cuisines, and ideas carried ashore.",
+      "shortDescription": "Island‑spun port on Kerala’s coast—Chinese nets, spice godowns, backwaters, and layered colonial heritage."
+    },
+    {
+      "name": "Guwahati",
+      "continent": "Asia",
+      "id": 1014,
+      "placeID": "INGUWAHBRAH014",
+      "longitude": 91.7362,
+      "latitude": 26.1445,
+      "span": 8.0,
+      "description": "Cradled by the Brahmaputra and the Khasi‑Jaintia hills, Guwahati is the Northeast’s gateway city. The hilltop Kamakhya temple presides over Nilachal, while ferries and bridges link river islands like Umananda. Markets brim with Assam tea, bamboo crafts, and silks from Sualkuchi.\n\nWildlife sanctuaries—Pobitora and Orang nearby—shelter rhinos and wetlands birds; Kaziranga lies further east. Bihu festivals animate courtyards with drums (dhol), flutes (pepa), and vivid gamochas. Fish curries, pork with bamboo shoot, and pithas highlight a diverse Assamese table.\n\nThe monsoon‑widened river and winter mists set the city’s mood. Guwahati balances a growing university and space research presence with sacred hills and riverine life.",
+      "shortDescription": "Assam’s river city on the Brahmaputra—hilltop shrines, tea and silk markets, and rhino‑rich wetlands at its doorstep."
+    },
+    {
+      "name": "Ahmedabad",
+      "continent": "Asia",
+      "id": 1015,
+      "placeID": "INAHMDBADSAB015",
+      "longitude": 72.5714,
+      "latitude": 23.0225,
+      "span": 6.0,
+      "description": "Ahmedabad pairs stepwells, pol houses, and intricate sultanate mosques with a modern fabric of institutes and riverfront promenades. The Sabarmati Ashram on the river’s banks radiates Gandhian simplicity. Old City pols knit courtyards and bird‑feeding niches (chabutras) into living heritage.\n\nAdalaj ni Vav’s carved descent, the jali screens of Sidi Saiyyed Mosque, and Calico Museum’s textiles showcase craft genius. Street snacks—khakhra, fafda‑jalebi, and Gujarati thalis—feed a city that loves festivals; Uttarayan splashes the skies with kites each January.\n\nDry heat yields to dramatic monsoons that revive lakes and gardens. Startups and design schools keep the city future‑focused while its stone latticework filters the light of centuries.",
+      "shortDescription": "Riverfront city of Gandhi’s ashram, stepwells, pol houses, and exquisite stone latticework alongside modern institutes."
+    },
+    {
+      "name": "Shillong",
+      "continent": "Asia",
+      "id": 1016,
+      "placeID": "INSHILLOGHILL016",
+      "longitude": 91.8820,
+      "latitude": 25.5788,
+      "span": 8.0,
+      "description": "Set among rolling pine‑clad hills, Shillong—‘Scotland of the East’—rests on a plateau with misty mornings and music in its soul. Colonial cottages, Khasi heritage, and cafes cluster around Ward’s Lake and Police Bazaar. Waterfalls like Elephant Falls tumble after rains; viewpoints look toward Bangladesh’s plains.\n\nSacred groves near Mawphlang protect ancient biodiversity through customary law. Local cuisine—tungrymbai, jadoh, and smoked meats—appears in family kitchens and markets. Rock music festivals, football, and literature add to a lively calendar.\n\nCloudscapes change by the hour; monsoons green the hills. The city serves as a springboard to living‑root bridges, caves, and the rain‑drenched villages of Meghalaya.",
+      "shortDescription": "Pine‑scented hill city with waterfalls, sacred groves, cafés, and a thriving music culture in Meghalaya."
+    },
+    {
+      "name": "Jodhpur",
+      "continent": "Asia",
+      "id": 1017,
+      "placeID": "INJODHPURBLUE017",
+      "longitude": 73.0243,
+      "latitude": 26.2389,
+      "span": 8.0,
+      "description": "Jodhpur’s blue‑washed old quarters radiate from the colossal Mehrangarh Fort, whose ramparts survey the Thar’s edge. Palaces with intricately carved sandstone, stepwells like Toorji ka Jhalra, and bazaars around the clock tower stitch together a desert city of craft and spice.\n\nMarwar cuisine—mirchi vada, mawa kachori, and ker sangri—adds heat and tang. Umaid Bhawan’s Art Deco dome signals a 20th‑century royal chapter. Camel safaris, folk music, and winter polo carry desert rhythms into the present.\n\nSunsets flame across the fort’s walls, and winter brings crisp air and festival season. The blue city keeps its cool and its stories in the shade of narrow alleys.",
+      "shortDescription": "Desert city of blue houses beneath Mehrangarh Fort—stepwells, spice markets, and Marwar flavors."
+    },
+    {
+      "name": "Rishikesh",
+      "continent": "Asia",
+      "id": 1018,
+      "placeID": "INRISHIGANGA018",
+      "longitude": 78.2676,
+      "latitude": 30.0869,
+      "span": 6.0,
+      "description": "Where the Ganga leaves the Himalaya, Rishikesh gathers ashrams, suspension bridges, and river beaches into a spiritual‑adventure town. Laxman Jhula and Ram Jhula string across turquoise currents; evening aartis flicker along ghats as rafters and kayakers launch upstream.\n\nYoga schools welcome global seekers; cafés serve sattvic bowls beside Himalayan bakes. Neelkanth Mahadev and forest trails climb into the foothills where langurs and colorful birds flit. Music and meditation festivals crest in spring and autumn’s clear weather.\n\nAs pilgrimage gateway to the Char Dham and to trekking valleys, Rishikesh balances quiet contemplation with whitewater adrenaline under snow‑lined ridges.",
+      "shortDescription": "Himalayan gateway on the Ganga—ashrams, hanging bridges, evening aarti, and whitewater adventures."
+    },
+    {
+      "name": "Mysuru",
+      "continent": "Asia",
+      "id": 1019,
+      "placeID": "INMYSOREDASARA019",
+      "longitude": 76.6394,
+      "latitude": 12.2958,
+      "span": 6.0,
+      "description": "Mysuru, seat of the Wadiyars, unfurls a boulevard city crowned by an illuminated palace whose stained glass and durbar halls echo with Dasara processions. The city’s markets perfume the air with sandalwood, incense, and the famous Mysore pak sweet.\n\nClose by, Chamundi Hill’s temple looks over tiled pavilions, yoga shalas, and the Indo‑Saracenic facades of the university and museums. Silk weaving and inlay crafts persist in family ateliers. Tree‑lined avenues and heritage bungalows preserve a gentle pace.\n\nFrom bird‑rich Karanji Lake to Bandipur’s forests a short drive away, nature remains within reach. Mysuru pairs tradition and learning with festive sparkle.",
+      "shortDescription": "Royal city of illuminated palace, Dasara pageantry, silk and sandalwood, with hills and lakes nearby."
+    },
+    {
+      "name": "Puducherry",
+      "continent": "Asia",
+      "id": 1021,
+      "placeID": "INPONDYBAY1021",
+      "longitude": 79.8083,
+      "latitude": 11.9416,
+      "span": 6.0,
+      "description": "Puducherry’s seaside promenade frames a colonial French Quarter of mustard and white villas, latticed balconies, and quiet courtyards where bougainvillea tumbles over walls. The Sri Aurobindo Ashram and nearby Auroville create contemplative centers that draw global seekers.\n\nCafés serve Creole‑Tamil plates beside filter coffee and baguettes; temples and churches share the street grid. Cycling reveals murals, pottery studios, and shaded avenues leading to rocky beaches and backwater inlets.\n\nSea breezes soften humid afternoons, and sunrise walks along the pier start unhurried days. Puducherry remains a gentle blend of Tamil coastal life and Mediterranean hues on India’s southeast shore.",
+      "shortDescription": "French‑Tamil seaside town with pastel villas, promenades, spiritual centers, and relaxed café culture."
+    }
+  ]

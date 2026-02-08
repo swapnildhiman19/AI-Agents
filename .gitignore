@@ -4,3 +4,7 @@
 # Ignore build artifacts
 llama/firstProgram
 
+# Ignore environment files with secrets
+.env
+**/.env
+

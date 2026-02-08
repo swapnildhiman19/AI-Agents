@@ -1,0 +1,10 @@
+{
+    "diffEditor.codeLens": true,
+    "python.defaultInterpreterPath": "/Users/s0d0bla/miniconda3/envs/ibm-ai/bin/python",
+    "python.analysis.extraPaths": [
+        "/Users/s0d0bla/miniconda3/envs/ibm-ai/lib/python3.11/site-packages"
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "/Users/s0d0bla/miniconda3/envs/ibm-ai/lib/python3.11/site-packages"
+    ]
+}

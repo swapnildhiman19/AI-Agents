@@ -8,3 +8,6 @@ llama/firstProgram
 .env
 **/.env
 
+# Ignore agentic design pattern complete pdf
+Agentic_Design_Patterns
+

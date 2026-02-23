@@ -3765,3 +3765,266 @@ So in both cases “memory” is literally “the list of past messages (or a st
 | **Gemini** | Use the same code with `llm = ChatGoogleGenerativeAI(...)`. You get one clean answer per turn instead of the WatsonxLLM-style “continued script”. |
 
 Paste the three blocks above into **BuildingSmarterAIappsusingGoogleGemini.ipynb** (after your `llm` and API key setup), run them in order, and you’ll see Memory (and the difference between manual history and ConversationChain) in the Gemini ecospace. If you want, we can next add a small “RAG + Memory” example (e.g. CHB brochure + conversation history) in the same notebook style.
+
+-------------------------------------------------------------------------------------
+
+Chains
+
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
+location_template = """Your job is to come up with a classic dish from the area that user suggests.
+{location}
+YOUR RESPONSE:
+"""
+
+dish_template = """Given a meal {meal}, give a short and simple recipe on how to make the dish at home.
+YOUR RESPONSE:
+"""
+
+time_template = """Given the recipe {recipe}, estimate how much time I need to cook it.
+YOUR RESPONSE:
+"""
+
+location_chain_lcel = (
+    PromptTemplate.from_template(location_template) | llm | StrOutputParser()
+)
+
+dish_chain_lcel = (
+    PromptTemplate.from_template(dish_template) | llm | StrOutputParser()
+)
+
+time_chain_lcel = (
+    PromptTemplate.from_template(time_template) | llm | StrOutputParser()
+)
+
+overall_chain_lcel = (
+    # Step 1: Generate a meal based on location and add it to the input dictionary
+    RunnablePassthrough.assign(meal=lambda x: location_chain_lcel.invoke({"location": x["location"]}))
+    # Step 2: Generate a recipe based on the meal and add it to the input dictionary
+    | RunnablePassthrough.assign(recipe=lambda x: dish_chain_lcel.invoke({"meal": x["meal"]}))
+    # Step 3: Estimate cooking time based on the recipe and add it to the input dictionary
+    | RunnablePassthrough.assign(time=lambda x: time_chain_lcel.invoke({"recipe": x["recipe"]}))
+)
+
+result = overall_chain_lcel.invoke({"location": "India"})
+pprint(result)
+
+
+# Why You Can't Just Pipe the Three Chains (and Why RunnablePassthrough.assign Is Used)
+
+## Layman explanation
+
+You have three steps:
+
+1. **Location → meal** (e.g. "India" → "Butter Chicken")
+2. **Meal → recipe** (e.g. "Butter Chicken" → "Recipe text...")
+3. **Recipe → time** (e.g. "Recipe text..." → "45 minutes")
+
+Each step needs **different input** and produces **one string**. The important part: later steps need **more than that one string**:
+
+- Step 2 needs: the **meal** (from step 1).
+- Step 3 needs: the **recipe** (from step 2).
+
+If you pipe chains directly:
+
+- Step 1 gets `{"location": "India"}` and **outputs** `"Butter Chicken"` (a single string).
+- That string is the **only** thing that gets passed to step 2. So step 2 only sees `"Butter Chicken"`, not a dict like `{"meal": "Butter Chicken"}`.
+- Step 2’s template expects a variable `{meal}`. In LCEL, templates are usually fed with **dicts** (e.g. `{"meal": "Butter Chicken"}`). So either the input shape is wrong, or you lose the fact that this string is “the meal”.
+- Even if step 2 could run, it would output **only** the recipe string. Then step 3 would get only that string, and you’d have no structured way to say “this is the recipe” and no way to keep “location” and “meal” around.
+
+So the problem with:
+
+```python
+overall_chain_lcel = location_chain_lcel | dish_chain_lcel | time_chain_lcel
+```
+
+is **data shape**: each of those chains takes a **dict** and returns a **string**. When you pipe them, the **output of one becomes the entire input of the next**. So you end up passing **only a string** to the next chain, and you **lose the dict** (no accumulated keys like `meal`, `recipe`, `time`). The second and third chains expect dicts with specific keys (`meal`, `recipe`), so the pipeline doesn’t match what each step expects.
+
+**RunnablePassthrough.assign** fixes this by:
+
+- Keeping the **same dict** flowing through the whole chain.
+- **Adding** one new key per step (e.g. `meal`, then `recipe`, then `time`) by running the right sub-chain and putting its string output into that key.
+- So every step always sees a **dict** with all previous keys, and each sub-chain gets the exact input it needs (`{"location": ...}`, `{"meal": ...}`, `{"recipe": ...}`).
+
+So: **RunnablePassthrough (and .assign) is important** because it lets you **preserve and extend a dict** across multiple steps, instead of replacing the whole value with a single string at each step.
+
+---
+
+## What Each Chain Consumes and Produces
+
+```python
+# Step 1
+location_chain_lcel = PromptTemplate.from_template(location_template) | llm | StrOutputParser()
+# Input:  {"location": "India"}
+# Output: "Butter Chicken"   ← a single string
+
+# Step 2
+dish_chain_lcel = PromptTemplate.from_template(dish_template) | llm | StrOutputParser()
+# Input:  {"meal": "Butter Chicken"}   ← expects a dict with key "meal"
+# Output: "1. Marinate chicken..."    ← a single string
+
+# Step 3
+time_chain_lcel = PromptTemplate.from_template(time_template) | llm | StrOutputParser()
+# Input:  {"recipe": "1. Marinate chicken..."}   ← expects a dict with key "recipe"
+# Output: "45 minutes"   ← a single string
+```
+
+So:
+
+- Input to the **overall** process: `{"location": "India"}`.
+- What we want by the end: a dict that has **all** of: `location`, `meal`, `recipe`, `time`.
+- What each sub-chain does: takes a dict with one key, returns a **string**. It does **not** return a dict.
+
+If you do:
+
+```python
+overall_chain_lcel = location_chain_lcel | dish_chain_lcel | time_chain_lcel
+result = overall_chain_lcel.invoke({"location": "India"})
+```
+
+the data flow is:
+
+```
+{"location": "India"}
+        │
+        ▼
+location_chain_lcel
+        │
+        ▼
+"Butter Chicken"   ← output is only this string
+        │
+        ▼
+dish_chain_lcel
+        │
+Input here is the string "Butter Chicken", not {"meal": "Butter Chicken"}.
+Templates usually expect a dict, so this is wrong or fragile.
+        │
+        ▼
+(if it worked) "1. Marinate chicken..."
+        │
+        ▼
+time_chain_lcel
+        │
+Input is only the recipe string. Again no dict, and you've lost "location" and "meal".
+```
+
+So you **cannot** use the simple pipe `location_chain_lcel | dish_chain_lcel | time_chain_lcel` and get correct, structured behavior, because:
+
+1. The **type** of data between steps is wrong (string vs dict).
+2. You **lose** previous keys (`location`, `meal`, `recipe`) and never build the full result dict.
+
+That’s why we need something that keeps a dict and only **adds** one new key per step. That “something” is **RunnablePassthrough.assign**.
+
+---
+
+## What RunnablePassthrough.assign Does
+
+**RunnablePassthrough** is a runnable that forwards its input unchanged (passthrough).  
+**RunnablePassthrough.assign(field=fn)** forwards the input and **adds** (or overwrites) one key by calling `fn(input)` and putting the result in `field`.
+
+So:
+
+```python
+RunnablePassthrough.assign(meal=lambda x: location_chain_lcel.invoke({"location": x["location"]}))
+```
+
+means:
+
+- Take current input `x` (e.g. `{"location": "India"}`).
+- Call `location_chain_lcel.invoke({"location": x["location"]})` → get `"Butter Chicken"`.
+- Output = **same dict** as input **plus** key `"meal"` = `"Butter Chicken"`.
+
+So output = `{"location": "India", "meal": "Butter Chicken"}`. The dict grows by one key; nothing is dropped.
+
+Your full chain:
+
+```python
+overall_chain_lcel = (
+    RunnablePassthrough.assign(meal=lambda x: location_chain_lcel.invoke({"location": x["location"]}))
+    | RunnablePassthrough.assign(recipe=lambda x: dish_chain_lcel.invoke({"meal": x["meal"]}))
+    | RunnablePassthrough.assign(time=lambda x: time_chain_lcel.invoke({"recipe": x["recipe"]}))
+)
+```
+
+does this:
+
+- **Step 1:** Start with `{"location": "India"}` → add `meal` → `{"location": "India", "meal": "Butter Chicken"}`.
+- **Step 2:** Input is that dict → add `recipe` → `{"location": "India", "meal": "Butter Chicken", "recipe": "1. Marinate..."}`.
+- **Step 3:** Input is that dict → add `time` → `{"location": "India", "meal": "Butter Chicken", "recipe": "...", "time": "45 minutes"}`.
+
+So the **importance of RunnablePassthrough** here is: it keeps the **dict** and lets you **assign** one new key per step, so every sub-chain gets the right input shape and you get a single result dict with all four keys.
+
+---
+
+## Flow Diagram (Correct vs Simple Pipe)
+
+**Correct (with RunnablePassthrough.assign):**
+
+```
+{"location": "India"}
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  RunnablePassthrough.assign(meal=...)                           │
+│  - Keeps: {"location": "India"}                                  │
+│  - Calls: location_chain_lcel.invoke({"location": "India"})      │
+│  - Adds:  meal = "Butter Chicken"                                │
+└─────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+{"location": "India", "meal": "Butter Chicken"}
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  RunnablePassthrough.assign(recipe=...)                          │
+│  - Keeps: location, meal                                         │
+│  - Calls: dish_chain_lcel.invoke({"meal": "Butter Chicken"})     │
+│  - Adds:  recipe = "1. Marinate..."                              │
+└─────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+{"location": "India", "meal": "Butter Chicken", "recipe": "..."}
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  RunnablePassthrough.assign(time=...)                            │
+│  - Keeps: location, meal, recipe                                 │
+│  - Calls: time_chain_lcel.invoke({"recipe": "..."})              │
+│  - Adds:  time = "45 minutes"                                     │
+└─────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+{"location": "India", "meal": "Butter Chicken", "recipe": "...", "time": "45 minutes"}
+```
+
+**Wrong (simple pipe):**
+
+```
+{"location": "India"}
+        │
+        ▼
+location_chain_lcel  →  "Butter Chicken"   (only a string)
+        │
+        ▼
+dish_chain_lcel      →  expects {"meal": ...}, gets "Butter Chicken"  ❌
+        │
+        ▼
+time_chain_lcel      →  gets only recipe string, no dict  ❌
+```
+
+So: you’re **not** using `location_chain_lcel | dish_chain_lcel | time_chain_lcel` because that would change the **data shape** (dict → string → string) and **lose** the structure. You **are** using RunnablePassthrough.assign so the **dict** is passed through and **augmented** at each step, and each sub-chain gets the exact dict it needs.
+
+---
+
+## Short Summary
+
+| Question | Answer |
+|----------|--------|
+| Why not `location_chain_lcel \| dish_chain_lcel \| time_chain_lcel`? | Each chain returns a **string**. Piping passes that string as the next input, so the next chain doesn’t get a dict like `{"meal": ...}` or `{"recipe": ...}`. You also lose previous keys. |
+| What does RunnablePassthrough do? | Passes the input through unchanged (and with `.assign`, adds one new key per step). |
+| Why is it important here? | So the **full dict** (`location`, `meal`, `recipe`, `time`) is carried through the pipeline and each sub-chain gets the right input (e.g. `{"meal": "Butter Chicken"}`). |
+| Result | One final dict with all four keys; correct input shape for every step. |
+
+So: **RunnablePassthrough (and .assign)** is what keeps your multi-step pipeline as a **dict-based** flow and gives each step the right input, instead of a simple string-to-string pipe that doesn’t match your templates or your desired output structure.

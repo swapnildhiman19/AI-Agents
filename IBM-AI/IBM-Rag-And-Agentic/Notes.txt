@@ -4028,3 +4028,599 @@ So: you’re **not** using `location_chain_lcel | dish_chain_lcel | time_chain_l
 | Result | One final dict with all four keys; correct input shape for every step. |
 
 So: **RunnablePassthrough (and .assign)** is what keeps your multi-step pipeline as a **dict-based** flow and gives each step the right input, instead of a simple string-to-string pipe that doesn’t match your templates or your desired output structure.
+
+
+### Tools and Agents
+Tools extend an LLM's capabilities beyond just generating text. They allow the model to actually perform actions in the world or access external systems. This notebook shows the Python REPL tool, but there are many other tools:
+
+- Search tools: Connect to search engines, database queries, or vector stores.
+- API tools: Make calls to external web services.
+- Human-in-the-loop tools: Request human input for critical decisions.
+
+Let’s explore how to work with tools, using the `Python REPL` tool as an example. The `Python REPL` tool can run Python commands. These commands can either come from the user or the LLM can generate the commands. This tool is particularly useful for complex calculations. Instead of having the LLM generate the answer directly, using the LLM to generate code to calculate the answer is more efficient.
+
+from langchain_core.tools import Tool
+from langchain.tools import tool
+from langchain_experimental.utilities import PythonREPL
+
+# Create a PythonREPL instance
+# This provides an environment where Python code can be executed as strings
+python_repl = PythonREPL()
+
+# Create a Tool using the Tool class
+# This wraps the Python REPL functionality as a tool that can be used by agents
+python_calculator = Tool(
+    # The name of the tool - this helps agents identify when to use this tool
+    name="Python Calculator",
+    
+    # The function that will be called when the tool is used
+    # python_repl.run takes a string of Python code and executes it
+    func=python_repl.run,
+    
+    # A description of what the tool does and how to use it
+    # This helps the agent understand when and how to use this tool
+    description="Useful for when you need to perform calculations or execute Python code. Input should be valid Python code."
+)
+
+python_calculator.invoke("a = 3; b = 1; print(a+b)")
+
+**No — `Tool` is not an LLM.** It’s a wrapper that turns a **function** into something an agent can call. No model runs inside the Tool.
+
+---
+
+## What function is actually used?
+
+You *did* specify a function: **`func=python_repl.run`**.
+
+That’s the function the Tool calls. So:
+
+- **Tool** = “callable” that an agent can use.
+- **Function** = `python_repl.run`.
+- **Input** = a string (Python code).
+
+When you do:
+
+```python
+python_calculator.invoke("a = 3; b = 1; print(a+b)")
+```
+
+what happens is:
+
+1. The Tool receives the string `"a = 3; b = 1; print(a+b)"`.
+2. It calls **`python_repl.run("a = 3; b = 1; print(a+b)")`**.
+3. `PythonREPL` executes that string as Python in a subprocess/interpreter.
+4. You see the result (e.g. `4`).
+
+So the “logic” isn’t a hand‑written `def sum(a,b): return a+b`. The logic is: “run whatever Python code string I’m given.” You (or an agent) are responsible for **providing** that code string; the Tool only **executes** it.
+
+---
+
+## Who provides the code?
+
+- **In your test:** You did: you passed `"a = 3; b = 1; print(a+b)"` as the input.
+- **In an agent:** The **LLM** would decide “I need to compute 3+1” and then **call the tool** with an input like `"print(3+1)"` or `"a=3; b=1; print(a+b)"`. The Tool doesn’t write that code; the LLM does. The Tool just runs it.
+
+So:
+
+- **Tool** = wrapper around `python_repl.run` (execute a code string).
+- **LLM** (when used as an agent) = decides when to use the tool and what code string to pass.
+- **Tool is not an LLM**; it’s a fixed function that runs Python code.
+
+
+Here’s a concise picture of how it works and how to do the same with Google Gemini.
+
+---
+
+# 1. Who writes the Python code?
+
+**The LLM writes the code.** The Tool does not generate code; it only runs the string it receives.
+
+You *did* give an “actual” function: **`func=python_repl.run`**. That function:
+
+- Takes **one argument**: a string (Python code).
+- Does **one thing**: executes that string in a Python REPL and returns the result.
+
+The **description** of the tool is for the **LLM**:
+
+- So it knows *when* to use the tool (“calculations or execute Python code”).
+- So it knows *what* to pass (“Input should be valid Python code”).
+
+So the flow is:
+
+1. User asks: “What is the square root of 256?”
+2. **LLM** (agent) thinks and outputs something like:  
+   `Action: Python Calculator`  
+   `Action Input: import math; print(math.sqrt(256))`
+3. **AgentExecutor** parses that and calls  
+   `python_calculator.invoke("import math; print(math.sqrt(256))")`
+4. That runs **`python_repl.run("import math; print(math.sqrt(256))")`** → REPL executes the code and returns the output (e.g. `16.0`).
+5. That output is fed back to the LLM as “Observation”.
+6. LLM then answers: “Final Answer: 16” (or similar).
+
+So: **LLM = writes the code string. Tool = runs it via `python_repl.run`.** No LLM lives inside the Tool.
+
+---
+
+# 2. Concepts in one place
+
+| Concept | What it is |
+|--------|------------|
+| **Tool** | Wrapper around a **function** (e.g. `python_repl.run`). Has `name`, `description` (for the LLM), and `func`. When the agent “calls” the tool, the executor runs `func(agent’s input)`. |
+| **Agent** | The runnable built by `create_react_agent`: LLM + prompt that outputs “Thought / Action / Action Input” (or “Final Answer”). It does **not** run tools; it only *decides* which tool and which input. |
+| **create_react_agent** | Builds that agent: takes `llm`, `tools`, `prompt` and returns an agent that produces ReAct-format text. |
+| **AgentExecutor** | **Orchestrator**: loop that (1) calls the agent with the question + `agent_scratchpad`, (2) parses “Action” and “Action Input”, (3) runs the right tool with that input, (4) appends “Observation: &lt;result&gt;” to the scratchpad, (5) calls the agent again. Repeats until the agent outputs “Final Answer”. |
+
+So:
+
+- **Agent** = “brain” (LLM + ReAct prompt) that chooses tools and inputs.
+- **Executor** = “runner” that actually invokes tools and feeds results back.
+
+---
+
+# 3. Responsibilities of AgentExecutor
+
+- **Execution loop:**  
+  Invoke agent → parse response → if tool call: execute tool with given input → add observation to scratchpad → invoke agent again; if “Final Answer”, stop and return it.
+- **Parsing:**  
+  Interpret the agent’s text to get `Action` (tool name) and `Action Input` (string for that tool).
+- **Tool dispatch:**  
+  Map tool name to the actual Tool and call `tool.invoke(action_input)`.
+- **State:**  
+  Keep and update `agent_scratchpad` (all thought/action/observation so far) so the agent has full context.
+- **Error handling:**  
+  e.g. `handle_parsing_errors=True` when the agent’s output format is wrong.
+- **Safety / limits:**  
+  Max iterations, timeouts, etc., so the loop doesn’t run forever.
+
+So the executor is what *runs* the tools; the agent only *decides* what to run and with what input.
+
+---
+
+# 4. Flow diagram
+
+```
+User: "What is the square root of 256?"
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  AgentExecutor.invoke({"input": "What is the square root..."})  │
+└─────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  AGENT (create_react_agent)                                      │
+│  Prompt includes: question + tool names + descriptions +         │
+│  "Thought / Action / Action Input" format.                        │
+│  LLM outputs:                                                    │
+│    Thought: I need to compute sqrt(256). I'll use Python.        │
+│    Action: Python Calculator                                    │
+│    Action Input: import math; print(math.sqrt(256))              │
+└─────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  AGENT EXECUTOR                                                  │
+│  Parses → tool = "Python Calculator", input = "import math; ..."  │
+│  Calls: python_calculator.invoke("import math; print(...)")      │
+│  That runs: python_repl.run("import math; print(...)")            │
+│  REPL returns: "16.0"                                           │
+│  Appends to scratchpad: "Observation: 16.0"                      │
+└─────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  AGENT (again)                                                   │
+│  Sees: Question + previous Thought/Action/Observation (16.0)      │
+│  Outputs: Thought: I have the answer.                           │
+│           Final Answer: The square root of 256 is 16.0.          │
+└─────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+Executor sees "Final Answer" → exits loop → returns result["output"].
+```
+
+So: **LLM writes the code string; PythonREPL (the Tool’s `func`) runs it; Executor wires them together.**
+
+---
+
+# 5. Google Gemini version (for your notebook)
+
+Use the same pattern; only the LLM is different. Add these cells in **BuildingSmarterAIappsusingGoogleGemini.ipynb** (after your `llm` and `GOOGLE_API_KEY` are defined).
+
+**Cell 1 – Imports and tools**
+
+```python
+# --- Agents: Tool, ReAct Agent, AgentExecutor (Google Gemini) ---
+from langchain_core.tools import Tool
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain_core.prompts import PromptTemplate
+from langchain_experimental.utilities import PythonREPL
+
+# Python REPL tool: LLM will generate code, this executes it
+python_repl = PythonREPL()
+python_calculator = Tool(
+    name="Python Calculator",
+    func=python_repl.run,
+    description="Useful for when you need to perform calculations or execute Python code. Input should be valid Python code."
+)
+
+@tool
+def search_weather(location: str):
+    """Search for the current weather in the specified location."""
+    return f"The weather in {location} is currently sunny and 72°F."
+
+tools = [python_calculator, search_weather]
+```
+
+**Cell 2 – ReAct prompt and agent**
+
+```python
+# ReAct prompt: tells the LLM how to output Thought / Action / Action Input / Final Answer
+prompt_template = """You are an agent with access to the following tools:
+
+{tools}
+
+Tool names: {tool_names}
+
+Use this format:
+Thought: your reasoning
+Action: tool_name
+Action Input: input for the tool
+
+After the tool runs you will see:
+Observation: result
+
+When done, respond:
+Thought: I know the final answer
+Final Answer: the answer
+
+For Python Calculator, Action Input must be valid Python code.
+
+Question: {input}
+{agent_scratchpad}
+"""
+
+prompt = PromptTemplate.from_template(prompt_template)
+agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+```
+
+**Cell 3 – Run the agent**
+
+```python
+# Same as IBM notebook: executor runs the loop; LLM writes the code, Tool runs it
+result = agent_executor.invoke({"input": "What is the square root of 256?"})
+print(result["output"])
+```
+
+**Cell 4 – Optional: math and weather**
+
+```python
+result = agent_executor.invoke({"input": "What's 345 * 789?"})
+print(result["output"])
+```
+
+```python
+result = agent_executor.invoke({"input": "What's the weather in Miami?"})
+print(result["output"])
+```
+
+With `verbose=True` you’ll see the “Thought / Action / Action Input” and “Observation” in the notebook, so you can confirm that the **LLM** is writing the Python code and the **Tool** (via `python_repl.run`) is only executing it.
+
+---
+
+# 6. Short answers to your questions
+
+- **Is the Tool an LLM?**  
+  No. The Tool is a wrapper around a function (e.g. `python_repl.run`). The LLM is the agent.
+
+- **We only give a description, not the “actual” Python function?**  
+  We do give the actual function: `func=python_repl.run`. The *description* is for the LLM so it knows when and how to call the tool (and that the input must be valid Python code).
+
+- **Does the LLM write the code and pass it to PythonREPL?**  
+  Yes. The LLM outputs “Action Input: &lt;code string&gt;”. The AgentExecutor passes that string to `python_calculator.invoke(...)`, which calls `python_repl.run(...)`. So the LLM writes the code; the Tool only executes it.
+
+- **How to experience this in Google Gemini?**  
+  Use the cells above in **BuildingSmarterAIappsusingGoogleGemini.ipynb** with your existing `llm` (e.g. `ChatGoogleGenerativeAI`). The flow (Tool vs Agent vs AgentExecutor) is the same as in the IBM notebook; only the LLM instance changes.
+
+
+Those placeholders are filled by the **LangChain agent framework** when the agent (and executor) run. Nothing in your code fills them manually.
+
+---
+
+## Who fills each variable?
+
+| Placeholder         | Filled by              | Source |
+|---------------------|------------------------|--------|
+| `{tools}`           | Framework (agent/executor) | List of tools, each formatted as “name: description” |
+| `{tool_names}`      | Framework              | Comma‑separated tool names from the `tools` list |
+| `{input}`           | You (via executor)     | The dict you pass to `invoke({"input": "..."})` |
+| `{agent_scratchpad}`| **AgentExecutor**      | Built over the loop: previous Thought/Action/Action Input/Observation text |
+
+So:
+
+- **You** only supply `{input}` by calling `agent_executor.invoke({"input": "What is the square root of 256?"})`.
+- **Executor** maintains and injects `{agent_scratchpad}` each time it re‑invokes the agent.
+- **Framework** injects `{tools}` and `{tool_names}` from the `tools` list you gave to `create_react_agent` and `AgentExecutor`.
+
+---
+
+## What the full prompt looks like (with real values)
+
+Assume:
+
+- Tools: `Python Calculator`, `search_weather`
+- User question: `"What is the square root of 256?"`
+
+**First turn** (no tool call yet, scratchpad empty):
+
+```
+You are an agent with access to the following tools:
+
+Python Calculator: Useful for when you need to perform calculations or execute Python code. Input should be valid Python code.
+
+search_weather: Search for the current weather in the specified location.
+
+Tool names: Python Calculator, search_weather
+
+Use this format:
+Thought: your reasoning
+Action: tool_name
+Action Input: input for the tool
+
+After the tool runs you will see:
+Observation: result
+
+When done, respond:
+Thought: I know the final answer
+Final Answer: the answer
+
+For Python Calculator, Action Input must be valid Python code.
+
+Question: What is the square root of 256?
+
+
+```
+
+At the end, the last two lines are:
+
+- `Question: What is the square root of 256?`  ← from `{input}`
+- `` (empty)  ← from `{agent_scratchpad}` (nothing yet)
+
+So **first turn** = your template with `{tools}`, `{tool_names}`, `{input}` and an empty `{agent_scratchpad}`.
+
+**Second turn** (after one tool call; executor has run the calculator and now calls the agent again with updated scratchpad):
+
+```
+You are an agent with access to the following tools:
+
+Python Calculator: Useful for when you need to perform calculations or execute Python code. Input should be valid Python code.
+
+search_weather: Search for the current weather in the specified location.
+
+Tool names: Python Calculator, search_weather
+
+Use this format:
+Thought: your reasoning
+Action: tool_name
+Action Input: input for the tool
+
+...
+
+Question: What is the square root of 256?
+
+Thought: I need to compute the square root of 256. I'll use the Python Calculator.
+Action: Python Calculator
+Action Input: import math; print(math.sqrt(256))
+Observation: 16.0
+
+```
+
+Here:
+
+- `Question: ...` is still from `{input}` (same user question).
+- Everything from `Thought:` down to `Observation: 16.0` is **`{agent_scratchpad}`**: the executor appended the previous agent output and the tool result so the LLM can see what it already did and then output “Final Answer”.
+
+So the **whole prompt with actual values** is exactly that: the same template, with `{tools}` and `{tool_names}` replaced once, `{input}` replaced with the user question, and `{agent_scratchpad}` replaced with the growing history (empty first time, then Thought/Action/Action Input/Observation, then more lines if there are more steps).
+
+---
+
+## How the executor fills `{agent_scratchpad}`
+
+Rough flow:
+
+1. Executor calls the agent with `agent_scratchpad = ""`.
+2. Agent (LLM) returns text containing e.g.  
+   `Thought: ... Action: Python Calculator Action Input: import math; ...`
+3. Executor parses that, runs the tool, gets `"16.0"`.
+4. Executor appends to the scratchpad something like:  
+   `Thought: ... Action: Python Calculator Action Input: ... Observation: 16.0`
+5. Executor calls the agent **again** with the same `{input}` but **new** `{agent_scratchpad}` = that appended text.
+6. LLM now sees the observation and outputs `Thought: I know the final answer Final Answer: 16.0` (or similar).
+7. Executor sees “Final Answer” and stops, returning that as `result["output"]`.
+
+So: **the prompt template gets the value of `{agent_scratchpad}` from the AgentExecutor**, which updates it after each tool step. **`{tools}` and `{tool_names}`** are filled by the framework from the `tools` list. **`{input}`** is what you pass in `invoke({"input": "..."})`. Together, that’s how the full prompt with actual values is built each time the agent is called.
+
+
+
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_experimental.utilities import PythonREPL
+from langchain_core.tools import tool
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+
+# 2. Define Tools
+# A. Python REPL Tool
+python_repl = PythonREPL()
+
+@tool
+def python_tool(code: str):
+    """A Python shell. Use this to execute python commands or do math. 
+    Input should be a valid python command."""
+    return python_repl.run(code)
+
+# B. Mock Weather Tool
+@tool
+def get_weather(location: str):
+    """Provides the current weather for a specific city/location."""
+    # Mock data logic
+    if "chandigarh" in location.lower():
+        return "It's 25°C and sunny in Chandigarh."
+    return f"The weather in {location} is 22°C with light rain."
+
+tools = [python_tool, get_weather]
+
+# 3. Create Prompt Template
+# Agent needs a specific structure to know where to put chat history and thoughts
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful AI agent that can run code and check weather."),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
+    ("human", "{input}"),
+    MessagesPlaceholder(variable_name="agent_scratchpad"),
+])
+
+# 4. Initialize the Agent
+# Gemini supports 'tool_calling', so we use this specific constructor
+agent = create_tool_calling_agent(llm, tools, prompt)
+
+# 5. Initialize AgentExecutor
+# If 'from langchain.agents import AgentExecutor' fails, 
+# use 'from langchain.agents.agent import AgentExecutor'
+agent_executor = AgentExecutor(
+    agent=agent, 
+    tools=tools, 
+    verbose=True, 
+    handle_parsing_errors=True
+)
+
+# --- Test Runs ---
+print("--- Testing Weather Tool ---")
+response1 = agent_executor.invoke({"input": "What is the weather in Chandigarh?"})
+print("AI:", response1["output"])
+
+print("\n--- Testing Python Tool ---")
+response2 = agent_executor.invoke({"input": "What is the 15th Fibonacci number?"})
+print("AI:", response2["output"])
+
+
+
+# Is code ka matlab aur pehle wale code se farq
+
+## Short answers
+
+- **Yeh code kya hai:** Gemini ke liye **tool-calling agent**: LLM apne response me directly “tool call” bhejta hai (Thought/Action text nahi), executor us tool ko run karta hai, phir result wapas LLM ko jata hai.
+- **Pehle wale (ReAct) code se farq:** Wahan LLM **text** me “Action: Python Calculator” / “Action Input: code” likhta tha; yahan LLM **structured tool call** (name + arguments) bhejta hai. Isliye yahan `create_tool_calling_agent` use ho raha hai, ReAct wale me `create_react_agent`.
+- **MessagesPlaceholder / ChatPromptTemplate:** Template me **kahan** system message, user message, aur **agent_scratchpad** (tool calls + results) aayenge, ye define karta hai. `chat_history` optional hai; `agent_scratchpad` framework khud fill karta hai.
+- **Errors/warnings:** “Key 'title' is not supported” Gemini schema ki wajah se hai (ignore safe). “AttributeError: 'NoneType' object has no attribute 'get'” callback ke andar kahi `None` assume ho raha hai — zyada tar harmless, output sahi aa raha hai.
+
+Neeche step-by-step samjha raha hoon.
+
+---
+
+## 1. Yeh code kya karta hai (flow)
+
+```
+User: "What is the weather in Chandigarh?"
+        │
+        ▼
+AgentExecutor → Agent (LLM) ko bhejta hai: system message + user message + agent_scratchpad (pehli bar empty)
+        │
+        ▼
+LLM (Gemini) sochta hai: "weather chahiye → get_weather tool use karunga"
+        │
+        ▼
+LLM response me "tool call" bhejta hai (text nahi, structured): tool = get_weather, arguments = {"location": "Chandigarh"}
+        │
+        ▼
+Executor ye parse karta hai, get_weather("Chandigarh") run karta hai
+        │
+        ▼
+Result: "It's 25°C and sunny in Chandigarh." → ye "tool message" ban ke wapas LLM ko jata hai
+        │
+        ▼
+LLM phir se run hota hai (ab scratchpad me tool call + result dikhta hai), "Final Answer" deta hai
+        │
+        ▼
+Executor output return karta hai: "It's 25°C and sunny in Chandigarh."
+```
+
+Fibonacci wale case me same: LLM `python_tool` ko call karta hai with code string, REPL run karta hai, 610 wapas aata hai, LLM final answer deta hai.
+
+---
+
+## 2. Pehle wale (ReAct) code se kaise different hai
+
+| Cheez | ReAct (pehle wala) | Tool-calling (yeh wala) |
+|-------|---------------------|-------------------------|
+| Agent | `create_react_agent` | `create_tool_calling_agent` |
+| LLM output | **Text**: "Thought: ... Action: Python Calculator\nAction Input: import math; ..." | **Structured**: tool name + JSON arguments (API level par) |
+| Parser | Executor text parse karke tool name + input nikalta tha | Executor ko directly tool call object milta hai |
+| Prompt | `PromptTemplate` with `{tools}`, `{tool_names}`, `{input}`, `{agent_scratchpad}` | `ChatPromptTemplate` with messages: system, chat_history, human, agent_scratchpad |
+| Kaun use kare | Jo LLM “tool calling” support na kare | Jo LLM “tool calling” support kare (Gemini, GPT-4, etc.) |
+
+Matlab: **ReAct** = purana tarika (sirf text in/out). **Tool-calling** = naya tarika (LLM directly “ye tool, ye args” bhejta hai). Dono me executor same kaam karta hai: tool run karo, result wapas agent ko do; difference sirf “LLM ka output format” aur “prompt shape” me hai.
+
+---
+
+## 3. ChatPromptTemplate + MessagesPlaceholder — kaun kya fill karta hai
+
+Template ye hai:
+
+```python
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful AI agent that can run code and check weather."),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
+    ("human", "{input}"),
+    MessagesPlaceholder(variable_name="agent_scratchpad"),
+])
+```
+
+**ChatPromptTemplate** = ek list of **messages** (system, user, AI, etc.). Har item ek “role + content” hai. Isse final list of messages banti hai jo LLM ko jati hai.
+
+**MessagesPlaceholder** = “yahan pe baad me **messages ki list** daalni hai; abhi sirf slot define kar rahe ho.”
+
+- **`chat_history`:**  
+  - Optional hai (`optional=True`).  
+  - Agar tum multi-turn chat rakna chaho (purani user/AI messages) to tum yahan list of messages pass karoge.  
+  - Abhi tum pass nahi kar rahe, isliye ye slot empty rehta hai / skip ho jata hai.  
+  - **Filler:** tum (ya jo code `invoke` call karta hai); is code me koi nahi bhar raha.
+
+- **`agent_scratchpad`:**  
+  - Yahan **framework** (AgentExecutor / agent runnable) **tool calls + tool results** ki messages daalta hai.  
+  - Pehli call: empty.  
+  - Tool call ke baad: “tool call message” + “tool result message” append hota hai, taaki LLM dekh sake “maine kya call kiya aur kya result aaya.”  
+  - **Filler:** LangChain agent framework (executor).
+
+**`{input}`:**  
+- Ye tumhara user question hai.  
+- **Filler:** tum: `agent_executor.invoke({"input": "What is the weather in Chandigarh?"})`.
+
+**Poora prompt (messages) with actual values** kabhi aise dikhega (conceptually):
+
+- Message 1 (system): `"You are a helpful AI agent that can run code and check weather."`
+- Message 2 (chat_history): optional — is example me empty / nahi hai
+- Message 3 (human): `"What is the weather in Chandigarh?"`
+- Message 4 (agent_scratchpad): pehli bar empty; tool use ke baad: [AIMessage with tool_calls], [ToolMessage with result]
+
+So: **ChatPromptTemplate** = “LLM ko kaun kaun se messages chahiye (system, history, current input, scratchpad)”. **MessagesPlaceholder** = “ye do jagah (`chat_history`, `agent_scratchpad`) baad me messages se bhar dena — `chat_history` tum/consumer bharoge, `agent_scratchpad` framework bharata hai.”
+
+---
+
+## 4. Warnings / errors ka matlab
+
+- **`Key 'title' is not supported in schema, ignoring`**  
+  LangChain tools ka schema (e.g. “title”) Gemini API support nahi karti; Gemini us key ko ignore kar rahi hai. **Effect:** koi functional problem nahi, output sahi aa raha hai. Safe to ignore ya future LangChain/Gemini update me fix ho sakta hai.
+
+- **`Error in StdOutCallbackHandler.on_chain_start callback: AttributeError("'NoneType' object has no attribute 'get'")`**  
+  Ye **callback** (logging/verbose) ke andar ho raha hai: kahi code `something.get(...)` call kar raha hai lekin `something` `None` hai. Agent/executor ka actual logic sahi chal raha hai (weather + Fibonacci dono sahi), isliye ye **callback bug** hai, tumhara agent code galat nahi.  
+  Chaho to `verbose=False` karke ye callback avoid kar sakte ho; ya ignore kar sakte ho jab tak output theek hai.
+
+---
+
+## 5. Ek line summary
+
+- **Yeh code:** Tool-calling agent (Gemini) + Python REPL + mock weather; executor input se `{input}` leta hai, `agent_scratchpad` khud bhar ke tool call + result LLM ko dikhata hai.
+- **ReAct se farq:** ReAct = text-based “Action / Action Input”; ye = structured tool calls. Dono me executor tool run karke result wapas agent ko deta hai.
+- **MessagesPlaceholder / ChatPromptTemplate:** Template ye fix karta hai ki system message, user input, aur tool-call/result messages kis order me jayenge; `chat_history` optional tumhare liye, `agent_scratchpad` framework fill karta hai.
+- **Response:** Weather aur Fibonacci dono sahi aa rahe hain; jo errors/warnings dikh rahe hain wo schema/callback ki wajah se hain, agent logic theek hai.

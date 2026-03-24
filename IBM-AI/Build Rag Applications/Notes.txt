@@ -1,0 +1,407 @@
+# RAG (Retrieval Augmented Generation) — Complete Breakdown
+
+## The Problem RAG Solves (Layman's Terms)
+
+Imagine you hire a **brilliant new employee** (the LLM). They know everything about the world — history, science, coding. But they know **nothing** about your company's internal policies, private documents, or recent data.
+
+You have two choices:
+1. **Retrain them** (expensive, time-consuming, like sending them back to university)
+2. **Give them a reference manual** they can look up on the spot (cheap, fast)
+
+**RAG is option 2.** Instead of retraining the model, you let it **look up relevant documents** before answering.
+
+```
+WITHOUT RAG:
+  User: "What is our company's mobile policy?"
+  AI: "I don't know your company's policy." ← only knows general knowledge
+
+WITH RAG:
+  User: "What is our company's mobile policy?"
+  System: *searches company docs, finds mobile policy*
+  System: *hands relevant paragraphs to the AI*
+  AI: "Your company allows employees to use personal devices for work..." ← correct!
+```
+
+---
+
+## The RAG Pipeline — End to End
+
+Here's the complete flow mapped to your slides:
+
+```
+┌────────────────────────────────────────────────────────────────────--┐
+│                        RAG PROCESS                                   │
+│                                                                      │
+│  ┌─────────────────── RETRIEVER ─────────────────── ┐                │
+│  │                                                  │                │
+│  │   QUESTION SIDE          DOCUMENT SIDE           │                │
+│  │   ─────────────          ─────────────           │                │
+│  │                                                  │                │
+│  │   "What is your    Company docs (mobile policy,  │                │
+│  │    mobile policy?"  HR handbook, etc.)           │                │
+│  │        │                    │                    │                │
+│  │        ▼                    ▼                    │                │
+│  │   ┌──────────┐       ┌──────────────┐            │                │
+│  │   │ Question │       │   Context    │            │                │
+│  │   │ Encoder  │       │   Encoder    │            │                │
+│  │   └────┬─────┘       └──────┬───────┘            │                │
+│  │        │                    │                    │                │
+│  │        ▼                    ▼                    │                │
+│  │   [0.35, 0.08, 0.16]  Chunk 0: [0.05, 0.25, 0.71]                 │
+│  │   (question vector)   Chunk 1: [0.28, 0.78, 0.12]                 │
+│  │                       Chunk 2: [0.40, 0.09, 0.14]  ← stored       │
+│  │                       Chunk 3: [0.23, 0.13, 0.23]    in Vector    │
+│  │                       ...                             Database    │
+│  │                       Chunk N: [0.61, 0.78, 0.65]                 │
+│  │        │                    │                    │                │
+│  │        └────────┬───────────┘                    │                │
+│  │                 ▼                                │                │
+│  │          Compare distances                       │                │
+│  │          (cosine similarity /                    │                │
+│  │           dot product)                           │                │
+│  │                 │                                │                │
+│  │                 ▼                                │                │
+│  │          Pick top K closest chunks               │                │
+│  │          (K=3 → Chunks 2, 0, N-1)                │                │
+│  └─────────────────┬───────────────────             ┘                │
+│                    │                                                 │
+│                    ▼                                                 │ 
+│  ┌─────────────── GENERATOR ─────────────────── ┐                    │
+│  │                                              │                    │
+│  │  Augmented query =                           │                    │
+│  │    Original question                         │                    │ 
+│  │    + Retrieved chunk texts                   │                    │
+│  │                                              │                    │
+│  │  "Based on the following context:            │                    │
+│  │   [Chunk 2: Our mobile policy allows...]     │                    │
+│  │   [Chunk 0: Employees must register...]      │                    │
+│  │   Answer: What is your mobile policy?"       │                    │
+│  │                                              │                    │
+│  │  LLM generates final answer                  │                    │
+│  └──────────────────────────────────────────────┘                    │
+└────────────────────────────────────────────────────────────────────  ┘
+```
+
+Now let's break down **every single concept** shown in your slides.
+
+---
+
+## Step 1: The Encoders — Turning Text into Numbers
+
+### Why do we need this?
+
+Computers can't understand text directly. They understand numbers. An **encoder** converts text into a list of numbers (called a **vector**) that captures the **meaning** of that text.
+
+```
+BEFORE encoding:       AFTER encoding:
+─────────────────      ─────────────────
+"What is your          [0.35, 0.08, 0.16]
+ mobile policy?"       
+                       Just 3 numbers, but in reality
+"Our mobile policy     it's 768 or 1024 numbers
+ allows employees      (called "dimensions")
+ to use personal
+ devices for work"     [0.40, 0.09, 0.14]
+```
+
+The key insight: **texts with similar meaning get similar numbers.**
+
+```
+"What is your mobile policy?"  →  [0.35, 0.08, 0.16]
+"Tell me about phone rules"   →  [0.33, 0.09, 0.15]  ← very close!
+"What's for dinner tonight?"  →  [0.91, 0.72, 0.03]  ← very different!
+```
+
+### Two encoders in RAG:
+
+| Encoder | Input | Output | When it runs |
+|---|---|---|---|
+| **Question Encoder** | The user's prompt | A single question vector | Every time user asks something |
+| **Context Encoder** | Each document chunk | A vector per chunk | Once, when you set up the system |
+
+### How the encoder works internally (from your slide 2 and 3):
+
+The slides show a **Transformer architecture** (like BERT):
+
+```
+  "What is your mobile policy?"
+              │
+              ▼
+     ┌─────────────────┐
+     │ Input Embedding  │    Each word → a vector
+     │                  │    "What" → [0.1, 0.3, ...]
+     │ "What" "is"      │    "is"   → [0.2, 0.1, ...]
+     │ "your" "mobile"  │    "your" → [0.4, 0.5, ...]
+     │ "policy"         │    etc.
+     └────────┬─────────┘
+              │
+              ▼
+     ┌─────────────────┐
+     │ + Positional     │    Adds position info so the model knows
+     │   Encoding       │    word ORDER matters:
+     │                  │    "dog bites man" ≠ "man bites dog"
+     └────────┬─────────┘
+              │
+              ▼
+     ┌─────────────────┐
+     │ Multi-head       │    Each word "looks at" every other word
+     │ Attention        │    to understand context:
+     │                  │    "mobile" + "policy" together → company rules
+     │                  │    "mobile" + "phone"  together → device
+     └────────┬─────────┘
+              │
+              ▼
+     ┌─────────────────┐
+     │ Add and Norm     │    Stabilizes the numbers
+     └────────┬─────────┘
+              │
+              ▼
+     ┌─────────────────┐
+     │ Feed Forward     │    Processes the information further
+     └────────┬─────────┘
+              │
+              ▼
+     ┌─────────────────┐
+     │ Add and Norm     │    Stabilizes again
+     └────────┬─────────┘
+              │
+              ▼
+     Per-word vectors: [v₁] [v₂] [v₃] [v₄] [v₅]
+     (one vector per word/token)
+              │
+              ▼
+     ┌─────────────────────────────────────┐
+     │           AVERAGE                    │
+     │                                      │
+     │  1/N × Σ(v₁ + v₂ + v₃ + ... + vₙ)  │
+     │                                      │
+     │  = single vector [0.35, 0.08, 0.16]  │
+     └─────────────────────────────────────┘
+```
+
+The formula \(\frac{1}{N} \sum(v_1, v_2, \ldots, v_N)\) from your slides simply means: **average all the word vectors into one single vector** that represents the entire sentence.
+
+---
+
+## Step 2: Chunking Documents (from your slide 4)
+
+### Why chunk?
+
+Your company's mobile policy might be 10 pages long. You can't stuff all of it into the AI's prompt — it won't fit, and most of it won't be relevant.
+
+So you **break the document into smaller pieces** (chunks):
+
+```
+Full document: "Our mobile policy allows employees to use personal 
+devices for work. Devices must be registered with IT. Employees 
+must install security software. Lost devices must be reported 
+within 24 hours. Personal use is limited during work hours..."
+
+                         │
+                         ▼ CHUNKING
+                         
+Chunk 0: "Our mobile policy allows employees to use personal devices for work."
+Chunk 1: "Devices must be registered with IT."
+Chunk 2: "Employees must install security software."
+Chunk 3: "Lost devices must be reported within 24 hours."
+Chunk 4: "Personal use is limited during work hours."
+...
+```
+
+### Then encode each chunk into a vector:
+
+```
+Documents                    Chunks              Vectors              Knowledge Base
+─────────                    ──────              ───────              ──────────────
+  📄📄📄    ──→    Chunk 0  ──→  [0.05, 0.25, 0.71]  ──→   ChunkID │ h₁   │ h₂   │ h₃
+  📄📄          Chunk 1  ──→  [0.28, 0.78, 0.12]       0    │ 0.05 │ 0.25 │ 0.71
+                 Chunk 2  ──→  [0.40, 0.09, 0.14]       1    │ 0.28 │ 0.78 │ 0.12
+                 Chunk 3  ──→  [0.23, 0.13, 0.23]       2    │ 0.40 │ 0.09 │ 0.14
+                 Chunk 4  ──→  [...]                     3    │ 0.23 │ 0.13 │ 0.23
+                 ...                                     ...  │ ...  │ ...  │ ...
+                 Chunk N  ──→  [0.61, 0.78, 0.65]       N    │ 0.61 │ 0.78 │ 0.65
+```
+
+This table IS the **Vector Database**. The `h₁, h₂, h₃` are the vector dimensions (in reality there are hundreds of dimensions, but your slides use 3 for simplicity).
+
+This encoding happens **once** when you set up the system — not every time a user asks a question.
+
+---
+
+## Step 3: Search for Relevant Context (from your slide 5)
+
+Now when a user asks "What is your mobile policy?", we need to find **which chunks are most relevant**.
+
+The question gets encoded into its vector `[0.35, 0.08, 0.16]`, and we compare it against every chunk vector in the database:
+
+```
+Question vector: [0.35, 0.08, 0.16]
+
+Compare against each chunk:
+
+ChunkID │ Chunk Vector           │ Distance from question
+────────┼────────────────────────┼──────────────────────
+   0    │ [0.05, 0.25, 0.71]    │   0.65
+   1    │ [0.28, 0.78, 0.12]    │   0.71
+   2    │ [0.40, 0.09, 0.14]    │   0.05  ← CLOSEST! Most relevant
+   3    │ [0.23, 0.13, 0.23]    │   0.89
+  ...   │ ...                    │   ...
+   N    │ [0.61, 0.78, 0.65]    │   0.15
+
+Lower distance = more similar = more relevant
+```
+
+But **how** do we calculate "distance"? That's where the two metrics come in.
+
+---
+
+## Step 4: Distance Metrics — Dot Product vs Cosine Similarity (from your slide 6)
+
+### Dot Product
+
+Think of it as: **"How aligned are these two vectors, considering both their direction AND their length?"**
+
+```
+Formula:   q · c = Σ(qᵢ × cᵢ)
+
+Example:
+  q = [0.35, 0.08, 0.16]     (question)
+  c = [0.40, 0.09, 0.14]     (chunk 2)
+
+  dot product = (0.35×0.40) + (0.08×0.09) + (0.16×0.14)
+              = 0.140 + 0.0072 + 0.0224
+              = 0.1696
+
+Higher dot product = more similar
+```
+
+**Analogy:** Imagine two arrows on a dartboard. The dot product considers:
+- Are the arrows pointing the same direction? (direction)
+- How long are the arrows? (magnitude)
+
+A long arrow pointing the same way as the question gets a HIGH score.
+
+### Cosine Similarity
+
+Think of it as: **"How close is the angle between the two vectors, IGNORING their length?"**
+
+```
+Formula:   cos(φ) = (q · c) / (‖q‖ × ‖c‖)
+
+                         dot product
+              = ─────────────────────────────
+                length of q  ×  length of c
+
+This normalizes the result to be between -1 and 1:
+  1  = identical direction (most similar)
+  0  = perpendicular (unrelated)
+ -1  = opposite direction (opposite meaning)
+```
+
+**Analogy:** Two arrows on a dartboard — cosine similarity ONLY cares about the **angle** between them, not how long they are. A short arrow pointing the same direction as the question is just as "similar" as a long one.
+
+### Visual from your slide:
+
+```
+                    c1 (green)        q (orange, question)
+                     ↗                 ↗
+                   /                 /
+                 /                 /
+               /    c2 (purple)  /
+              /      ↗         /
+            /      /         /
+          /   φ₂ /    φ₁   /
+        ●───────────────────
+
+φ₁ = angle between q and c1 (LARGE angle)
+φ₂ = angle between q and c2 (SMALL angle)
+
+Dot product says:    q·c1 > q·c2  (c1 wins — it's a LONG vector)
+Cosine says:         cos(φ₁) < cos(φ₂)  (c2 wins — it points in a closer direction)
+```
+
+### Which one to use?
+
+| Metric | Considers | Best when |
+|---|---|---|
+| **Dot Product** | Direction AND magnitude | Vector length carries meaning (e.g., importance, frequency) |
+| **Cosine Similarity** | Direction ONLY | You only care about meaning/topic, not length |
+
+In most RAG systems, **cosine similarity** is more common because we care about meaning, not vector magnitude.
+
+---
+
+## Step 5: Select Top K Chunks (from your slide 7)
+
+Once you have all the distances, pick the **K closest** chunks. K is a hyperparameter (you choose it — typically 3 to 5).
+
+```
+K = 3 (we want the 3 most relevant chunks)
+
+Distances:  [0.65, 0.71, 0.05, 0.89, ..., 0.15]
+Chunk IDs:  [  0,    1,    2,    3,  ...,   N-1 ]
+
+argsort (sort by distance, return the indices):
+
+  Smallest distances:  0.05 (Chunk 2), 0.15 (Chunk N-1), 0.65 (Chunk 0)
+  
+  Top K=3 chunks: Chunk 2, Chunk N-1, Chunk 0
+```
+
+`argsort_{i<K}` from your slide means: "sort by distance, take the first K indices (the closest ones)."
+
+---
+
+## Step 6: Generate the Final Answer
+
+Now the system builds an **augmented prompt** by combining:
+1. The user's original question
+2. The text of the top K retrieved chunks
+
+```
+ORIGINAL question: "What is your mobile policy?"
+
+RETRIEVED chunks:
+  Chunk 2: "Employees must install security software on all devices."
+  Chunk 0: "Our mobile policy allows employees to use personal devices for work."
+  Chunk N-1: "Devices must be registered with IT before accessing company data."
+
+AUGMENTED PROMPT sent to the LLM:
+┌─────────────────────────────────────────────────────────────────┐
+│  Based on the following context:                                │
+│                                                                 │
+│  - Our mobile policy allows employees to use personal devices   │
+│    for work.                                                    │
+│  - Employees must install security software on all devices.     │
+│  - Devices must be registered with IT before accessing          │
+│    company data.                                                │
+│                                                                 │
+│  Question: What is your mobile policy?                          │
+│                                                                 │
+│  Answer:                                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+LLM OUTPUT:
+"Our company's mobile policy allows employees to use personal
+ devices for work, provided they install security software
+ and register the device with IT before accessing company data."
+```
+
+The LLM **never saw** the full company document. It only saw the 3 most relevant chunks. But that was enough to generate an accurate answer.
+
+---
+
+## Complete Summary Table
+
+| Step | What Happens | Analogy |
+|------|--------------|---------|
+| **1. Chunk documents** | Break big docs into small pieces | Cutting a book into paragraphs |
+| **2. Encode chunks** | Convert each chunk to a vector | Writing a summary number for each paragraph |
+| **3. Store in Vector DB** | Save all chunk vectors | Filing the summaries in a cabinet |
+| **4. Encode question** | Convert user's question to a vector | Writing a summary number for the question |
+| **5. Search (distance)** | Compare question vector vs all chunk vectors | Finding which filed summary is closest to the question's summary |
+| **6. Select top K** | Pick the K closest chunks | Pulling the 3 most relevant paragraphs |
+| **7. Augment prompt** | Combine question + retrieved chunk text | Handing the employee the question + reference pages |
+| **8. Generate answer** | LLM answers using the augmented prompt | Employee reads the reference and answers |
+
+The entire point of RAG: **the LLM doesn't need to memorize everything — it just needs to be given the right pages to read at the right time.**

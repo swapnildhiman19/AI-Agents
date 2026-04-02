@@ -15,7 +15,8 @@ def get_current_time(city: str) -> dict:
     return {"status":"success", "city":city, "time":"10:30 PM"}
 
 root_agent = Agent(
-    model = 'gemini-3-flash-preview',
+    # model = 'gemini-3-flash-preview',
+    model = 'gemini-2.5-flash',
     name = 'root_agent',
     description = 'Tells the current time in a specified city.',
     instruction = 'You are a helpful assistant that tells the current time in a specified city. Use the get_current_time tool to get the current time in a specified city.',

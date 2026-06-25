@@ -11,3 +11,8 @@ llama/firstProgram
 # Ignore agentic design pattern complete pdf
 Agentic_Design_Patterns
 
+# Python / uv virtualenv
+.venv/
+.python-version
+
+

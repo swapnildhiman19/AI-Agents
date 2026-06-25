@@ -47,6 +47,13 @@ def get_current_time(city: str) -> dict:
     )
     return {"status":"success", "report": report}
 
+from pydantic import BaseModel, Field
+
+class WeatherTimeReport(BaseModel):
+    city: str = Field(description="The name of the city")
+    weather: str = Field(description="The weather description or summary")
+    time: str = Field(description="The current time report for the city")
+
 root_agent = Agent(
     name="weather_time_agent",
     model="gemini-2.5-flash",
@@ -57,4 +64,6 @@ root_agent = Agent(
         "You are a helpful agent who can answer user questions about the time and weather in a city."
     ),
     tools = [get_weather,get_current_time],
+    output_schema=WeatherTimeReport,
+    output_key="report"
 )
